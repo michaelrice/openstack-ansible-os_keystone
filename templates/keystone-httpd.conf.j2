@@ -1,7 +1,13 @@
 # {{ ansible_managed }}
 
-Listen {{ keystone_service_port }}
 <VirtualHost *:{{ keystone_service_port }}>
+{% if keystone_mod_wsgi_enabled | bool -%}
+    WSGIDaemonProcess     keystone-service user={{ keystone_system_user_name }} group={{ keystone_system_group_name }} processes={{ keystone_wsgi_processes }} threads={{ keystone_wsgi_threads }} display-name=%{GROUP} python-path={{ keystone_bin | dirname }}/lib/python2.7/site-packages
+
+    WSGIProcessGroup      keystone-service
+    WSGIScriptAlias       / /var/www/cgi-bin/keystone/main
+    WSGIApplicationGroup  %{GLOBAL}
+    WSGIPassAuthorization On
 
     <IfVersion >= 2.4>
       ErrorLogFormat "%{cu}t %M"
@@ -11,11 +17,6 @@ Listen {{ keystone_service_port }}
     ErrorLog  /var/log/keystone/keystone-apache-error.log
     CustomLog /var/log/keystone/ssl_access.log {{ keystone_apache_custom_log_format }}
     Options +FollowSymLinks
-
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-XSS-Protection "1; mode=block"
-    Header set Content-Security-Policy "default-src 'self' https: wss:;"
-    Header set X-Frame-Options "{{ keystone_x_frame_options | default ('DENY') }}"
 
     {% if keystone_ssl | bool and keystone_service_internaluri_proto == "https" -%}
     SSLEngine on
@@ -63,13 +64,19 @@ Listen {{ keystone_service_port }}
         Order allow,deny
         allow from all
     </Directory>
-
+{% else %}
     ProxyPass / uwsgi://127.0.0.1:{{ keystone_uwsgi_ports['keystone-wsgi-public']['socket'] }}/
-
+{% endif %}
 </VirtualHost>
 
-Listen {{ keystone_admin_port }}
 <VirtualHost *:{{ keystone_admin_port }}>
+{% if keystone_mod_wsgi_enabled | bool -%}
+    WSGIDaemonProcess     keystone-admin user={{ keystone_system_user_name }} group={{ keystone_system_group_name }} processes={{ keystone_wsgi_processes }} threads={{ keystone_wsgi_threads }} display-name=%{GROUP} python-path={{ keystone_bin | dirname }}/lib/python2.7/site-packages
+
+    WSGIProcessGroup      keystone-admin
+    WSGIScriptAlias       / /var/www/cgi-bin/keystone/admin
+    WSGIApplicationGroup  %{GLOBAL}
+    WSGIPassAuthorization On
 
     <IfVersion >= 2.4>
       ErrorLogFormat "%{cu}t %M"
@@ -79,7 +86,6 @@ Listen {{ keystone_admin_port }}
     ErrorLog  /var/log/keystone/keystone-apache-error.log
     CustomLog /var/log/keystone/ssl_access.log {{ keystone_apache_custom_log_format }}
     Options +FollowSymLinks
-
 
     {% if keystone_ssl | bool and keystone_service_adminuri_proto == "https" -%}
     SSLEngine on
@@ -101,10 +107,11 @@ Listen {{ keystone_admin_port }}
         Order allow,deny
         allow from all
     </Directory>
-
+{% else -%}
     ProxyPass / uwsgi://127.0.0.1:{{ keystone_uwsgi_ports['keystone-wsgi-admin']["socket"] }}/
-
+{% endif %}
 </VirtualHost>
-
+{% if not keystone_mod_wsgi_enabled | bool -%}
 ProxyPass /identity uwsgi://127.0.0.1:{{ keystone_uwsgi_ports['keystone-wsgi-public']['socket'] }}/
 ProxyPass /identity_admin uwsgi://127.0.0.1:{{ keystone_uwsgi_ports['keystone-wsgi-admin']['socket'] }}/
+{% endif %}

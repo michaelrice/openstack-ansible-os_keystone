@@ -38,6 +38,9 @@ keystone_apache_distro_packages:
 # We can remove this in R because we only need this to
 # handle upgrades from O->P in order to remove the
 # package when switching to the new configuration.
+# Note (michael rice): Until upstream keystone
+# has docs that say otherwise they say federation needs to 
+# continue to use mod_wsgi in apache.
 keystone_mod_wsgi_distro_packages:
   - libapache2-mod-wsgi
 
@@ -50,6 +53,7 @@ keystone_idp_distro_packages:
 
 keystone_sp_distro_packages:
   - libapache2-mod-shib2
+  - libapache2-mod-wsgi
 
 keystone_developer_mode_distro_packages:
   - build-essential

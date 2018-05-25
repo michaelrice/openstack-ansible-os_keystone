@@ -495,3 +495,7 @@ keystone_uwsgi_init_overrides: {}
 #     - parameter: "Access-Control-Allow-Origin"
 #       value: "*"
 keystone_extra_headers: []
+
+# Set this to true in your user_vars file when using federation.
+keystone_mod_wsgi_enabled: False
+
